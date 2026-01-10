@@ -1,6 +1,6 @@
 # Microserviço de Envio de Email
 
-Microserviço desenvolvido em Spring Boot para envio de emails via SMTP, com persistência do histórico de envios em banco de dados PostgreSQL e processamento assíncrono de mensagens via RabbitMQ.
+Microserviço desenvolvido em Spring Boot para envio de emails via SMTP, com persistência do histórico de envios em banco de dados PostgreSQL.
 
 ## Tecnologias Utilizadas
 
@@ -8,28 +8,25 @@ Microserviço desenvolvido em Spring Boot para envio de emails via SMTP, com per
 - Spring Boot 3.5.9
 - Spring Data JPA
 - Spring Mail
-- Spring AMQP (RabbitMQ)
 - PostgreSQL
-- Flyway (Migrations)
 - Lombok
 - Maven
+- Swagger/OpenAPI (SpringDoc)
+- LOG4J2
+- Flyway (Migrations)
+- RabbitMQ (Mensageria)
 
 ## Funcionalidades
 
 - Envio de emails via SMTP (configurado para Gmail)
-- Processamento assíncrono de emails através de fila RabbitMQ
 - Registro do histórico de envios no banco de dados
 - Validação de dados de entrada
 - Controle de status de envio (SENT/ERROR)
 - Registro de data/hora de envio
-- Migrations automáticas do banco de dados com Flyway
-
-## Arquitetura
-
-O microserviço suporta dois modos de operação:
-
-1. **Síncrono**: Através do endpoint REST `/sending-email`
-2. **Assíncrono**: Através de mensagens RabbitMQ consumidas da fila configurada
+- Documentação da API com Swagger/OpenAPI
+- Sistema de logs estruturado com LOG4J2
+- Gerenciamento de migrations com Flyway
+- Integração com RabbitMQ para processamento assíncrono de mensagens
 
 ## Pré-requisitos
 
@@ -66,12 +63,110 @@ MAILUSERNAME=seu-email@gmail.com
 MAILPASSWORD=sua-senha-de-aplicativo
 
 # RabbitMQ
-SPRING_RABBITMQ_HOST=localhost
-SPRING_RABBITMQ_PORT=5672
-SPRING_RABBITMQ_USERNAME=guest
-SPRING_RABBITMQ_PASSWORD=guest
-SPRING_RABBITMQ_QUEUE=ms.email
+RABBITMQ_HOST=localhost
+RABBITMQ_PORT=5672
+RABBITMQ_USERNAME=guest
+RABBITMQ_PASSWORD=guest
 ```
+
+## Flyway - Gerenciamento de Migrations
+
+O microserviço utiliza **Flyway** para versionamento e controle de migrations do banco de dados.
+
+### Configuração do Flyway
+
+O Flyway está configurado para:
+- Executar migrations automaticamente no startup da aplicação
+- Criar/atualizar tabelas conforme os scripts de migration
+- Ignorar placeholders `${...}` nos scripts SQL
+
+### Estrutura de Migrations
+
+Crie os scripts de migration em: `src/main/resources/db/migration/`
+
+Padrão de nomenclatura: `V{versao}__{descricao}.sql`
+
+Exemplo:
+```
+db/migration/
+├── V1__create_table_email.sql
+```
+
+### Exemplo de Migration
+
+**V1__create_table_email.sql:**
+```sql
+CREATE TABLE tb_email (
+    id BIGSERIAL PRIMARY KEY,
+    owner_ref VARCHAR(255) NOT NULL,
+    email_from VARCHAR(255) NOT NULL,
+    email_to VARCHAR(255) NOT NULL,
+    subject VARCHAR(255) NOT NULL,
+    text TEXT NOT NULL,
+    send_date_email TIMESTAMP,
+    status_email VARCHAR(50)
+);
+
+CREATE INDEX idx_email_status ON tb_email(status_email);
+CREATE INDEX idx_email_send_date ON tb_email(send_date_email);
+```
+
+### Comandos Úteis do Flyway
+
+**ATENÇÃO:** O comando `clean` está habilitado apenas para estudos/desenvolvimento. Em produção, desabilite com:
+```properties
+spring.flyway.clean-disabled=true
+```
+
+## RabbitMQ - Mensageria Assíncrona
+
+O microserviço está preparado para integração com **RabbitMQ** para processamento assíncrono de envio de emails.
+
+### Arquitetura de Mensageria
+
+- **Producer:** Outros microserviços enviam mensagens para a fila
+- **Consumer:** Este microserviço consome mensagens e processa o envio
+- **Dead Letter Queue (DLQ):** Mensagens com falha são redirecionadas
+
+### Filas Configuradas
+
+- **email.queue:** Fila principal para envio de emails
+- **email.dlq:** Dead Letter Queue para emails com erro
+
+### Exemplo de Payload da Mensagem
+
+```json
+{
+  "ownerRef": "user-123",
+  "emailFrom": "noreply@sistema.com",
+  "emailTo": "usuario@example.com",
+  "subject": "Bem-vindo ao sistema",
+  "text": "Obrigado por se cadastrar!"
+}
+```
+
+### Configurando o RabbitMQ
+
+1. **Instalar o RabbitMQ:**
+```bash
+# Docker
+docker run -d --name rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:3-management
+
+# Acessar console: http://localhost:15672
+# Usuário padrão: guest / guest
+```
+
+2. **Criar Exchange e Filas:**
+   - Exchange: `email.exchange` (tipo: direct)
+   - Queue: `email.queue`
+   - Routing Key: `email.routing.key`
+
+### Monitoramento
+
+Acesse o RabbitMQ Management Console:
+- URL: `http://localhost:15672`
+- Usuário: `guest`
+- Senha: `guest`
 
 ### Profile Ativo
 
@@ -90,17 +185,12 @@ git clone <url-do-repositorio>
 cd ms-email
 ```
 
-### 2. Inicie o RabbitMQ
-```bash
-docker run -d --name rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:3-management
-```
-
-### 3. Configure as variáveis de ambiente
+### 2. Configure as variáveis de ambiente
 ```bash
 # Configure conforme o ambiente (local/prod)
 ```
 
-### 4. Execute o projeto
+### 3. Execute o projeto
 ```bash
 # Usando Maven
 ./mvnw spring-boot:run
@@ -114,7 +204,7 @@ java -jar target/email-0.0.1-SNAPSHOT.jar
 
 ### POST /sending-email
 
-Envia um email de forma síncrona e registra o envio no banco de dados.
+Envia um email e registra o envio no banco de dados.
 
 **Request Body:**
 ```json
@@ -130,7 +220,7 @@ Envia um email de forma síncrona e registra o envio no banco de dados.
 **Response (201 Created):**
 ```json
 {
-  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "id": 1,
   "ownerRef": "identificador-do-proprietario",
   "emailFrom": "remetente@example.com",
   "emailTo": "destinatario@example.com",
@@ -145,23 +235,76 @@ Envia um email de forma síncrona e registra o envio no banco de dados.
 - Todos os campos são obrigatórios
 - `emailFrom` e `emailTo` devem ser emails válidos
 
-## Integração via RabbitMQ
+## Documentação da API (Swagger)
 
-### Publicando Mensagens na Fila
+A documentação interativa da API está disponível através do Swagger UI.
 
-Para enviar emails de forma assíncrona, publique uma mensagem na fila configurada (padrão: `ms.email`) com o seguinte formato JSON:
+### Acessando o Swagger
 
-```json
-{
-  "ownerRef": "identificador-do-proprietario",
-  "emailFrom": "remetente@example.com",
-  "emailTo": "destinatario@example.com",
-  "subject": "Assunto do email",
-  "text": "Corpo do email"
-}
+Após iniciar a aplicação, acesse:
+
+- **Swagger UI:** `http://localhost:8080/swagger-ui.html`
+- **API Docs (JSON):** `http://localhost:8080/api-docs`
+
+### Configuração do Swagger
+
+O Swagger está configurado com:
+- Ordenação de operações por método HTTP
+- Ordenação de tags em ordem alfabética
+- Filtro de endpoints habilitado
+- Funcionalidade "Try it out" ativada
+
+Para desabilitar o Swagger em produção, descomente as seguintes linhas no `application-prod.properties`:
+```properties
+springdoc.api-docs.enabled=false
+springdoc.swagger-ui.enabled=false
 ```
 
-O consumer irá processar a mensagem automaticamente e enviar o email.
+## Sistema de Logs
+
+O microserviço utiliza **LOG4J2** para gerenciamento de logs estruturados.
+
+### Níveis de Log
+
+- **ERROR:** Erros no envio de emails e exceções críticas
+- **WARN:** Avisos e situações anormais
+- **INFO:** Informações sobre envios de email e inicialização
+- **DEBUG:** Detalhes de execução (apenas em desenvolvimento)
+
+### Configuração de Logs
+
+Os logs podem ser configurados através do arquivo `log4j2.xml` (não incluído no repositório, criar conforme necessidade).
+
+Exemplo de configuração básica `log4j2.xml`:
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+    <Appenders>
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} %-5p %c{1}:%L - %m%n"/>
+        </Console>
+        <RollingFile name="RollingFile" fileName="logs/ms-email.log"
+                     filePattern="logs/ms-email-%d{yyyy-MM-dd}-%i.log">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} %-5p %c{1}:%L - %m%n"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1"/>
+                <SizeBasedTriggeringPolicy size="10MB"/>
+            </Policies>
+            <DefaultRolloverStrategy max="10"/>
+        </RollingFile>
+    </Appenders>
+    <Loggers>
+        <Root level="info">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="RollingFile"/>
+        </Root>
+        <Logger name="br.com.sistema" level="debug" additivity="false">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="RollingFile"/>
+        </Logger>
+    </Loggers>
+</Configuration>
+```
 
 ## Estrutura do Projeto
 
@@ -169,8 +312,6 @@ O consumer irá processar a mensagem automaticamente e enviar o email.
 src/
 ├── main/
 │   ├── java/br/com/sistema/
-│   │   ├── configurations/  # Configurações (RabbitMQ)
-│   │   ├── consumers/       # Consumers RabbitMQ
 │   │   ├── controllers/     # Controllers REST
 │   │   ├── dtos/            # Data Transfer Objects
 │   │   ├── enums/           # Enumerações
@@ -180,8 +321,7 @@ src/
 │   │   └── Startup.java     # Classe principal
 │   └── resources/
 │       ├── application.properties
-│       ├── application-prod.properties
-│       └── db/migration/    # Scripts Flyway (se houver)
+│       └── application-prod.properties
 └── test/                    # Testes unitários
 ```
 
@@ -189,27 +329,16 @@ src/
 
 ### Tabela: tb_email
 
-| Campo           | Tipo         | Descrição                      |
-|-----------------|--------------|--------------------------------|
-| id              | UUID         | ID único (PK)                  |
-| owner_ref       | VARCHAR      | Referência do proprietário     |
-| email_from      | VARCHAR      | Email remetente                |
-| email_to        | VARCHAR      | Email destinatário             |
-| subject         | VARCHAR      | Assunto do email               |
-| text            | TEXT         | Corpo do email                 |
-| send_date_email | TIMESTAMP    | Data/hora do envio             |
-| status_email    | VARCHAR      | Status (SENT/ERROR)            |
-
-### Migrations com Flyway
-
-O Flyway está configurado para executar migrations automaticamente no startup da aplicação. Para criar novas migrations:
-
-1. Crie arquivos SQL em `src/main/resources/db/migration/`
-2. Nomeie seguindo o padrão: `V{versão}__{descrição}.sql`
-   - Exemplo: `V1__create_email_table.sql`
-3. As migrations serão executadas automaticamente na próxima inicialização
-
-**Observação**: A configuração atual possui `spring.flyway.clean-disabled=false`, o que é apropriado apenas para ambientes de desenvolvimento/estudos.
+| Campo          | Tipo         | Descrição                      |
+|----------------|--------------|--------------------------------|
+| id             | BIGINT       | ID auto-incrementado (PK)      |
+| owner_ref      | VARCHAR      | Referência do proprietário     |
+| email_from     | VARCHAR      | Email remetente                |
+| email_to       | VARCHAR      | Email destinatário             |
+| subject        | VARCHAR      | Assunto do email               |
+| text           | TEXT         | Corpo do email                 |
+| send_date_email| TIMESTAMP    | Data/hora do envio             |
+| status_email   | VARCHAR      | Status (SENT/ERROR)            |
 
 ## Configuração do Gmail
 
@@ -219,18 +348,6 @@ Para usar o Gmail como servidor SMTP:
 2. Ative a verificação em duas etapas
 3. Gere uma "Senha de app" em: https://myaccount.google.com/apppasswords
 4. Use essa senha na variável `MAILPASSWORD`
-
-## Monitoramento
-
-### RabbitMQ Management Console
-
-Acesse `http://localhost:15672` para monitorar:
-- Filas e mensagens
-- Consumers ativos
-- Taxa de processamento
-- Mensagens não processadas
-
-**Credenciais padrão**: guest/guest
 
 ## Contribuindo
 

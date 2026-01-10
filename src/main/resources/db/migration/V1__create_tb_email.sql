@@ -11,3 +11,6 @@ CREATE TABLE tb_email (
     send_date_email TIMESTAMP,
     status_email VARCHAR(50)
 );
+
+CREATE INDEX idx_email_status ON tb_email(status_email);
+CREATE INDEX idx_email_send_date ON tb_email(send_date_email);
