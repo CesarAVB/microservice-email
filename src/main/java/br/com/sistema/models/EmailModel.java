@@ -3,9 +3,12 @@ package br.com.sistema.models;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.UUID;
+
 import br.com.sistema.enums.StatusEmail;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -28,5 +31,6 @@ public class EmailModel implements Serializable {
 	@Column(columnDefinition = "TEXT")
 	private String text;
 	private LocalDateTime sendDateEmail;
+	@Enumerated(EnumType.STRING)
 	private StatusEmail statusEmail;
 }
