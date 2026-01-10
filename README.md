@@ -163,12 +163,6 @@ Para enviar emails de forma assíncrona, publique uma mensagem na fila configura
 
 O consumer irá processar a mensagem automaticamente e enviar o email.
 
-### Exemplo com N8N
-
-1. Configure um nó RabbitMQ no N8N
-2. Defina a exchange e routing key conforme sua configuração
-3. Envie o payload no formato especificado acima
-
 ## Estrutura do Projeto
 
 ```
