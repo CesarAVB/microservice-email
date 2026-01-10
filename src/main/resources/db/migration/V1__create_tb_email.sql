@@ -1,6 +1,8 @@
 -- V1__create_tb_email.sql
 -- Criação da tabela tb_email para armazenar emails
 
+DROP TABLE IF EXISTS tb_email CASCADE;
+
 CREATE TABLE tb_email (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     owner_ref VARCHAR(255),
