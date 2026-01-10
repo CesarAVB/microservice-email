@@ -1,6 +1,8 @@
 package br.com.sistema.models;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.UUID;
 import br.com.sistema.enums.StatusEmail;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -13,11 +15,12 @@ import lombok.Data;
 @Data 
 @Entity
 @Table(name = "tb_email")
-public class EmailModel {
+public class EmailModel implements Serializable {
+	private static final long serialVersionUID = 1L;
 	
 	@Id
 	@GeneratedValue(strategy = GenerationType.AUTO)
-	private Long id;
+	private UUID id;
 	private String ownerRef;
 	private String emailFrom;
 	private String emailTo;
