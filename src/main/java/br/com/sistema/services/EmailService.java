@@ -10,13 +10,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.mail.MailException;
-import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
 import br.com.sistema.enums.StatusEmail;
 import br.com.sistema.models.EmailModel;
 import br.com.sistema.repositories.EmailRepository;
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
 import jakarta.transaction.Transactional;
 
 @Service
@@ -37,16 +39,25 @@ public class EmailService {
 		emailModel.setSendDateEmail(LocalDateTime.now());
 		
 		try {
-			SimpleMailMessage message = new SimpleMailMessage();
-			message.setFrom(emailModel.getEmailFrom());
-			message.setTo(emailModel.getEmailTo());
-			message.setSubject(emailModel.getSubject());
-			message.setText(emailModel.getText());
-			emailSender.send(message);
-			emailModel.setStatusEmail(StatusEmail.SENT);
-			logger.info("Email sent successfully to: {} ", emailModel.getEmailTo());
+			MimeMessage mimeMessage = emailSender.createMimeMessage();
+			MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
 			
-		} catch (MailException e) {
+			helper.setFrom(emailModel.getEmailFrom());
+			helper.setTo(emailModel.getEmailTo());
+			helper.setSubject(emailModel.getSubject());
+			
+			// Se tiver HTML, envia como HTML, senão envia como texto simples
+			if (emailModel.getHtml() != null && !emailModel.getHtml().isEmpty()) {
+				helper.setText(emailModel.getText(), emailModel.getHtml());
+			} else {
+				helper.setText(emailModel.getText(), false);
+			}
+			
+			emailSender.send(mimeMessage);
+			emailModel.setStatusEmail(StatusEmail.SENT);
+			logger.info("Email sent successfully to: {} with subject: {}", emailModel.getEmailTo(), emailModel.getSubject());
+			
+		} catch (MailException | MessagingException e) {
 			emailModel.setStatusEmail(StatusEmail.ERROR);
 			logger.error("Failed to send email to: {} | Subject: {} | Error: {}", emailModel.getEmailTo(), emailModel.getSubject(), e.getMessage());
 			

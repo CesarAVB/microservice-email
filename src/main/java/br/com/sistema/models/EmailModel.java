@@ -30,6 +30,8 @@ public class EmailModel implements Serializable {
 	private String subject;
 	@Column(columnDefinition = "TEXT")
 	private String text;
+	@Column(columnDefinition = "TEXT")
+	private String html;
 	private LocalDateTime sendDateEmail;
 	@Enumerated(EnumType.STRING)
 	private StatusEmail statusEmail;
