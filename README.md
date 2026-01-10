@@ -1,6 +1,6 @@
 # Microserviço de Envio de Email
 
-Microserviço desenvolvido em Spring Boot para envio de emails via SMTP, com persistência do histórico de envios em banco de dados PostgreSQL.
+Microserviço desenvolvido em Spring Boot para envio de emails via SMTP, com persistência do histórico de envios em banco de dados PostgreSQL e processamento assíncrono de mensagens via RabbitMQ.
 
 ## Tecnologias Utilizadas
 
@@ -8,23 +8,35 @@ Microserviço desenvolvido em Spring Boot para envio de emails via SMTP, com per
 - Spring Boot 3.5.9
 - Spring Data JPA
 - Spring Mail
+- Spring AMQP (RabbitMQ)
 - PostgreSQL
+- Flyway (Migrations)
 - Lombok
 - Maven
 
 ## Funcionalidades
 
 - Envio de emails via SMTP (configurado para Gmail)
+- Processamento assíncrono de emails através de fila RabbitMQ
 - Registro do histórico de envios no banco de dados
 - Validação de dados de entrada
 - Controle de status de envio (SENT/ERROR)
 - Registro de data/hora de envio
+- Migrations automáticas do banco de dados com Flyway
+
+## Arquitetura
+
+O microserviço suporta dois modos de operação:
+
+1. **Síncrono**: Através do endpoint REST `/sending-email`
+2. **Assíncrono**: Através de mensagens RabbitMQ consumidas da fila configurada
 
 ## Pré-requisitos
 
 - Java 21 ou superior
 - Maven 3.6+
 - PostgreSQL 12+
+- RabbitMQ 3.8+
 - Conta Gmail com senha de aplicativo configurada
 
 ## Configuração
@@ -52,6 +64,13 @@ MAILHOST=smtp.gmail.com
 MAILPORT=587
 MAILUSERNAME=seu-email@gmail.com
 MAILPASSWORD=sua-senha-de-aplicativo
+
+# RabbitMQ
+SPRING_RABBITMQ_HOST=localhost
+SPRING_RABBITMQ_PORT=5672
+SPRING_RABBITMQ_USERNAME=guest
+SPRING_RABBITMQ_PASSWORD=guest
+SPRING_RABBITMQ_QUEUE=ms.email
 ```
 
 ### Profile Ativo
@@ -71,12 +90,17 @@ git clone <url-do-repositorio>
 cd ms-email
 ```
 
-### 2. Configure as variáveis de ambiente
+### 2. Inicie o RabbitMQ
+```bash
+docker run -d --name rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:3-management
+```
+
+### 3. Configure as variáveis de ambiente
 ```bash
 # Configure conforme o ambiente (local/prod)
 ```
 
-### 3. Execute o projeto
+### 4. Execute o projeto
 ```bash
 # Usando Maven
 ./mvnw spring-boot:run
@@ -90,7 +114,7 @@ java -jar target/email-0.0.1-SNAPSHOT.jar
 
 ### POST /sending-email
 
-Envia um email e registra o envio no banco de dados.
+Envia um email de forma síncrona e registra o envio no banco de dados.
 
 **Request Body:**
 ```json
@@ -106,7 +130,7 @@ Envia um email e registra o envio no banco de dados.
 **Response (201 Created):**
 ```json
 {
-  "id": 1,
+  "id": "550e8400-e29b-41d4-a716-446655440000",
   "ownerRef": "identificador-do-proprietario",
   "emailFrom": "remetente@example.com",
   "emailTo": "destinatario@example.com",
@@ -121,12 +145,38 @@ Envia um email e registra o envio no banco de dados.
 - Todos os campos são obrigatórios
 - `emailFrom` e `emailTo` devem ser emails válidos
 
+## Integração via RabbitMQ
+
+### Publicando Mensagens na Fila
+
+Para enviar emails de forma assíncrona, publique uma mensagem na fila configurada (padrão: `ms.email`) com o seguinte formato JSON:
+
+```json
+{
+  "ownerRef": "identificador-do-proprietario",
+  "emailFrom": "remetente@example.com",
+  "emailTo": "destinatario@example.com",
+  "subject": "Assunto do email",
+  "text": "Corpo do email"
+}
+```
+
+O consumer irá processar a mensagem automaticamente e enviar o email.
+
+### Exemplo com N8N
+
+1. Configure um nó RabbitMQ no N8N
+2. Defina a exchange e routing key conforme sua configuração
+3. Envie o payload no formato especificado acima
+
 ## Estrutura do Projeto
 
 ```
 src/
 ├── main/
 │   ├── java/br/com/sistema/
+│   │   ├── configurations/  # Configurações (RabbitMQ)
+│   │   ├── consumers/       # Consumers RabbitMQ
 │   │   ├── controllers/     # Controllers REST
 │   │   ├── dtos/            # Data Transfer Objects
 │   │   ├── enums/           # Enumerações
@@ -136,7 +186,8 @@ src/
 │   │   └── Startup.java     # Classe principal
 │   └── resources/
 │       ├── application.properties
-│       └── application-prod.properties
+│       ├── application-prod.properties
+│       └── db/migration/    # Scripts Flyway (se houver)
 └── test/                    # Testes unitários
 ```
 
@@ -144,16 +195,27 @@ src/
 
 ### Tabela: tb_email
 
-| Campo          | Tipo         | Descrição                      |
-|----------------|--------------|--------------------------------|
-| id             | BIGINT       | ID auto-incrementado (PK)      |
-| owner_ref      | VARCHAR      | Referência do proprietário     |
-| email_from     | VARCHAR      | Email remetente                |
-| email_to       | VARCHAR      | Email destinatário             |
-| subject        | VARCHAR      | Assunto do email               |
-| text           | TEXT         | Corpo do email                 |
-| send_date_email| TIMESTAMP    | Data/hora do envio             |
-| status_email   | VARCHAR      | Status (SENT/ERROR)            |
+| Campo           | Tipo         | Descrição                      |
+|-----------------|--------------|--------------------------------|
+| id              | UUID         | ID único (PK)                  |
+| owner_ref       | VARCHAR      | Referência do proprietário     |
+| email_from      | VARCHAR      | Email remetente                |
+| email_to        | VARCHAR      | Email destinatário             |
+| subject         | VARCHAR      | Assunto do email               |
+| text            | TEXT         | Corpo do email                 |
+| send_date_email | TIMESTAMP    | Data/hora do envio             |
+| status_email    | VARCHAR      | Status (SENT/ERROR)            |
+
+### Migrations com Flyway
+
+O Flyway está configurado para executar migrations automaticamente no startup da aplicação. Para criar novas migrations:
+
+1. Crie arquivos SQL em `src/main/resources/db/migration/`
+2. Nomeie seguindo o padrão: `V{versão}__{descrição}.sql`
+   - Exemplo: `V1__create_email_table.sql`
+3. As migrations serão executadas automaticamente na próxima inicialização
+
+**Observação**: A configuração atual possui `spring.flyway.clean-disabled=false`, o que é apropriado apenas para ambientes de desenvolvimento/estudos.
 
 ## Configuração do Gmail
 
@@ -163,6 +225,18 @@ Para usar o Gmail como servidor SMTP:
 2. Ative a verificação em duas etapas
 3. Gere uma "Senha de app" em: https://myaccount.google.com/apppasswords
 4. Use essa senha na variável `MAILPASSWORD`
+
+## Monitoramento
+
+### RabbitMQ Management Console
+
+Acesse `http://localhost:15672` para monitorar:
+- Filas e mensagens
+- Consumers ativos
+- Taxa de processamento
+- Mensagens não processadas
+
+**Credenciais padrão**: guest/guest
 
 ## Contribuindo
 
