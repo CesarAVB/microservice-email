@@ -80,6 +80,12 @@
 		    <artifactId>flyway-core</artifactId>
 		</dependency>
 		
+		<!-- FLYWAY POSTGRESQL - Driver com recursos específicos do PostgreeSQL -->
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-database-postgresql</artifactId>
+		</dependency>
+		
 		<!-- FLYWAY MYSQL - Driver com recursos específicos do MySQL -->
 		<!-- <dependency>
 		    <groupId>org.flywaydb</groupId>
