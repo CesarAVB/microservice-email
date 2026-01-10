@@ -48,13 +48,13 @@ public class EmailService {
 			
 		} catch (MailException e) {
 			emailModel.setStatusEmail(StatusEmail.ERROR);
-			logger.error("Email with error: {} ", emailModel.toString());
-	        logger.error("Error {} ", e);
+			logger.error("Failed to send email to: {} | Subject: {} | Error: {}", emailModel.getEmailTo(), emailModel.getSubject(), e.getMessage());
 			
-		} 
-		
-		emailModel = emailRepository.save(emailModel);
-		logger.info("Email saved successfully emailId: {} ", emailModel.getId());
+		} finally {
+	        emailModel = emailRepository.save(emailModel);
+	        logger.info("Email saved with status: {} | emailId: {}", emailModel.getStatusEmail(), emailModel.getId());
+	    }
+
 		return emailModel;
 	}
 	
