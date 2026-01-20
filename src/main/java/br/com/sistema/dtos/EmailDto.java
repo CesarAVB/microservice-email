@@ -24,6 +24,4 @@ public class EmailDto {
 	@NotBlank
 	private String text;
 	
-	private String html;
-	
 }
