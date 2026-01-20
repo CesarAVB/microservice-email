@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Novo Contato - Portfólio</title>
+    <style>
+        /* Estilos base para garantir compatibilidade */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Helvetica, Arial, sans-serif;
+            background-color: #f4f7f9;
+            color: #2d3748;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .header {
+            background-color: #1a365d;
+            background-image: linear-gradient(135deg, #1a365d 0%, #2b6cb0 100%);
+            padding: 40px 20px;
+            text-align: center;
+            color: #ffffff;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .badge {
+            display: inline-block;
+            background-color: rgba(255, 255, 255, 0.2);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        .content {
+            padding: 35px;
+        }
+
+        .intro {
+            font-size: 16px;
+            color: #4a5568;
+            margin-bottom: 25px;
+            line-height: 1.5;
+        }
+
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .info-row {
+            border-bottom: 1px solid #edf2f7;
+        }
+
+        .info-label {
+            padding: 15px 0;
+            width: 120px;
+            font-size: 13px;
+            font-weight: 700;
+            color: #718096;
+            text-transform: uppercase;
+        }
+
+        .info-value {
+            padding: 15px 0;
+            font-size: 15px;
+            color: #2d3748;
+        }
+
+        .message-box {
+            margin-top: 25px;
+            background-color: #f8fafc;
+            border-radius: 8px;
+            padding: 20px;
+            border-left: 4px solid #4299e1;
+        }
+
+        .message-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: #4299e1;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .message-text {
+            font-size: 15px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            color: #2d3748;
+        }
+
+        .button-container {
+            text-align: center;
+            padding: 30px 0 10px;
+        }
+
+        .button {
+            background-color: #4299e1;
+            color: #ffffff !important;
+            padding: 14px 30px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            display: inline-block;
+            transition: background-color 0.2s;
+        }
+
+        .footer {
+            background-color: #f7fafc;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #a0aec0;
+        }
+
+        @media screen and (max-width: 480px) {
+            .content { padding: 20px; }
+            .info-label { width: 100%; display: block; padding-bottom: 0; }
+            .info-value { width: 100%; display: block; padding-top: 5px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <span class="badge">Novo Lead</span>
+            <h1>Notificação de Contato</h1>
+        </div>
+
+        <div class="content">
+            <p class="intro">Olá, você recebeu uma nova mensagem através do formulário do seu <strong>Portfólio</strong>. Confira os detalhes abaixo:</p>
+            
+            <table class="info-table">
+                <tr class="info-row">
+                    <td class="info-label">Nome</td>
+                    <td class="info-value"><strong>${contact.name}</strong></td>
+                </tr>
+                <tr class="info-row">
+                    <td class="info-label">E-mail</td>
+                    <td class="info-value">${contact.email}</td>
+                </tr>
+                <tr class="info-row">
+                    <td class="info-label">Telefone</td>
+                    <td class="info-value">${contact.phone}</td>
+                </tr>
+                <tr class="info-row">
+                    <td class="info-label">Assunto</td>
+                    <td class="info-value">${contact.subject}</td>
+                </tr>
+            </table>
+
+            <div class="message-box">
+                <span class="message-title">MENSAGEM:</span>
+                <div class="message-text">${contact.message}</div>
+            </div>
+
+            <div class="button-container">
+                <a href="mailto:${contact.email}" class="button">Responder por E-mail</a>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Este é um envio automático gerado pela sua página de portfólio.</p>
+            <p>© 2026 César Augusto. Todos os direitos reservados.</p>
+        </div>
+    </div>
+</body>
+</html>

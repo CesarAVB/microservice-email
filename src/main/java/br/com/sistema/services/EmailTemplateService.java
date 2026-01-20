@@ -13,15 +13,12 @@ import org.springframework.util.StreamUtils;
 @Service
 public class EmailTemplateService {
 
-    Logger logger = LogManager.getLogger(EmailTemplateService.class);
+    private final Logger logger = LogManager.getLogger(EmailTemplateService.class);
 
-    /**
-     * Carrega um template HTML do diretório resources/templates
-     * 
-     * @param templateName nome do arquivo de template (ex: "contact-email.html")
-     * @return conteúdo do template como String
-     * @throws IOException se o template não for encontrado
-     */
+    
+    // ===========================================================================
+ 	// Carrega o template de email a partir do classpath
+ 	// ===========================================================================
     public String loadTemplate(String templateName) throws IOException {
         ClassPathResource resource = new ClassPathResource("templates/" + templateName);
         
@@ -39,13 +36,10 @@ public class EmailTemplateService {
         return template;
     }
 
-    /**
-     * Processa um template substituindo os placeholders pelos valores fornecidos
-     * 
-     * @param template conteúdo do template HTML
-     * @param variables mapa com os valores para substituir (chave = placeholder, valor = conteúdo)
-     * @return template processado com os valores substituídos
-     */
+    
+    // ===========================================================================
+ 	// Substitui os placeholders no formato ${contact.variableName} pelos valores fornecidos no mapa
+ 	// ===========================================================================
     public String processTemplate(String template, Map<String, String> variables) {
         String processedTemplate = template;
         
@@ -59,14 +53,10 @@ public class EmailTemplateService {
         return processedTemplate;
     }
 
-    /**
-     * Carrega e processa um template em uma única operação
-     * 
-     * @param templateName nome do arquivo de template
-     * @param variables mapa com os valores para substituir
-     * @return template processado
-     * @throws IOException se o template não for encontrado
-     */
+    
+    // ===========================================================================
+ 	// Carrega e processa o template em um único método
+ 	// ===========================================================================
     public String loadAndProcessTemplate(String templateName, Map<String, String> variables) throws IOException {
         String template = loadTemplate(templateName);
         return processTemplate(template, variables);

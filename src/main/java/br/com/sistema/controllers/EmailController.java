@@ -1,14 +1,11 @@
 package br.com.sistema.controllers;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -21,7 +18,6 @@ import br.com.sistema.dtos.PortfolioEmailDto;
 import br.com.sistema.dtos.EmailDto;
 import br.com.sistema.models.EmailModel;
 import br.com.sistema.services.EmailService;
-import br.com.sistema.services.EmailTemplateService;
 import jakarta.validation.Valid;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -37,16 +33,10 @@ public class EmailController {
     @Autowired
     EmailService emailService;
 
-    @Autowired
-    EmailTemplateService emailTemplateService;
-
-    @Value("${spring.mail.username}")
-    private String emailFrom;
-
     
-    // ------------------------------------
-    // Enviar email genérico
-    // ------------------------------------
+    // ===========================================================================
+ 	// Método para enviar email genérico
+ 	// ===========================================================================
     @PostMapping("/sending-email")
     @Operation(summary = "Enviar email", description = "Envia um email e registra no sistema")
     @ApiResponses(value = {
@@ -60,11 +50,11 @@ public class EmailController {
         emailService.sendEmail(emailModel);
         return new ResponseEntity<>(emailModel, HttpStatus.CREATED);
     }
+
     
-    
-    // ------------------------------------
-    // Enviar email de contato usando template de portfólio
-    // ------------------------------------
+    // ===========================================================================
+ 	// Método para enviar email de contato usando template
+ 	// ===========================================================================
     @PostMapping("/sending-portfolio-email")
     @Operation(summary = "Enviar email de contato", description = "Envia um email usando o template de contato do portfólio")
     @ApiResponses(value = {
@@ -72,62 +62,35 @@ public class EmailController {
         @ApiResponse(responseCode = "400", description = "Dados inválidos"),
         @ApiResponse(responseCode = "500", description = "Erro interno ao enviar o email")
     })
-    public ResponseEntity<Object> sendingContactEmail(@RequestBody @Valid PortfolioEmailDto contactDto) {
+    public ResponseEntity<Object> sendingContactEmail(@RequestBody @Valid PortfolioEmailDto portfolioEmailDto) {
         try {
-            // Prepara as variáveis do template
-            Map<String, String> variables = new HashMap<>();
-            variables.put("name", contactDto.name());
-            variables.put("email", contactDto.email());
-            variables.put("phone", contactDto.phone());
-            variables.put("subject", contactDto.subject());
-            variables.put("message", contactDto.message());
-
-            // Processa o template
-            String htmlContent = emailTemplateService.loadAndProcessTemplate("template-email.html", variables);
-
-            // Cria o EmailModel
-            EmailModel emailModel = new EmailModel();
-            emailModel.setOwnerRef(contactDto.ownerRef());
-            emailModel.setEmailFrom(emailFrom);
-            emailModel.setEmailTo(contactDto.emailTo());
-            emailModel.setSubject("Novo contato: " + contactDto.subject());
-            emailModel.setText("Nome: " + contactDto.name() + "\nEmail: " + contactDto.email() + 
-                             "\nTelefone: " + contactDto.phone() + "\nMensagem: " + contactDto.message());
-            emailModel.setHtml(htmlContent);
-
-            // Envia o email
-            emailService.sendEmail(emailModel);
-
+            EmailModel emailModel = emailService.sendPortfolioEmail(portfolioEmailDto); // Chama o serviço para enviar email de portfólio
             return new ResponseEntity<>(emailModel, HttpStatus.CREATED);
-
         } catch (IOException e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Erro ao processar template de email: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro ao processar template de email: " + e.getMessage());
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Erro ao enviar email: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro ao enviar email: " + e.getMessage());
         }
     }
+
     
-    
-    // ------------------------------------
-    // Listar emails paginados
-    // ------------------------------------
+    // ===========================================================================
+ 	// Método para listar todos os emails com paginação
+ 	// ===========================================================================
     @GetMapping("/emails")
     @Operation(summary = "Listar emails", description = "Retorna uma lista paginada de emails enviados")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Lista de emails retornada com sucesso"),
         @ApiResponse(responseCode = "500", description = "Erro interno ao buscar emails")
     })
-    public ResponseEntity<Page<EmailModel>> getAllEmails(
-            @PageableDefault(page = 0, size = 5, sort = "id", direction = Sort.Direction.DESC) Pageable pageable) {
+    public ResponseEntity<Page<EmailModel>> getAllEmails(@PageableDefault(page = 0, size = 5, sort = "id", direction = Sort.Direction.DESC) Pageable pageable) {
         return new ResponseEntity<>(emailService.findAll(pageable), HttpStatus.OK);
     }
 
     
-    // ------------------------------------
-    // Consultar email por ID
-    // ------------------------------------
+    // ===========================================================================
+ 	// Método para consultar email por ID
+ 	// ===========================================================================
     @GetMapping("/emails/{id}")
     @Operation(summary = "Consultar email por ID", description = "Retorna os detalhes de um email específico pelo seu ID")
     @ApiResponses(value = {

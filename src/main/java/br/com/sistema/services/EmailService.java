@@ -1,12 +1,16 @@
 package br.com.sistema.services;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.mail.MailException;
@@ -14,6 +18,7 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
+import br.com.sistema.dtos.PortfolioEmailDto;
 import br.com.sistema.enums.StatusEmail;
 import br.com.sistema.models.EmailModel;
 import br.com.sistema.repositories.EmailRepository;
@@ -24,7 +29,6 @@ import jakarta.transaction.Transactional;
 @Service
 public class EmailService {
 	
-	// Cria um logger para a classe EmailController
 	Logger logger = LogManager.getLogger(EmailService.class);
 
 	@Autowired
@@ -33,6 +37,16 @@ public class EmailService {
 	@Autowired
 	private JavaMailSender emailSender;
 
+	@Autowired
+	private EmailTemplateService emailTemplateService;
+
+	@Value("${spring.mail.username}")
+	private String emailFrom;
+
+	
+	// ===========================================================================
+ 	// Envia um email genérico
+ 	// ===========================================================================
 	@Transactional
 	public EmailModel sendEmail(EmailModel emailModel) {
 		
@@ -68,13 +82,58 @@ public class EmailService {
 
 		return emailModel;
 	}
-	
-	
-	 public Page<EmailModel> findAll(Pageable pageable) {
-        return  emailRepository.findAll(pageable);
-    }
 
-    public Optional<EmailModel> findById(UUID id) {
-        return emailRepository.findById(id);
-    }
+	
+	// ===========================================================================
+ 	// Envia um email de contato usando template
+ 	// ===========================================================================
+	@Transactional
+	public EmailModel sendPortfolioEmail(PortfolioEmailDto portfolioEmailDto) throws IOException {
+		logger.info("Processing contact email from: {} | Subject: {}", portfolioEmailDto.email(), portfolioEmailDto.subject());
+		
+		// Prepara as variáveis do template
+		Map<String, String> variables = new HashMap<>();
+		variables.put("name", portfolioEmailDto.name());
+		variables.put("email", portfolioEmailDto.email());
+		variables.put("phone", portfolioEmailDto.phone());
+		variables.put("subject", portfolioEmailDto.subject());
+		variables.put("message", portfolioEmailDto.message());
+
+		// Processa o template - escolhe o nome do template e insere as variáveis no HTML
+		String htmlContent = emailTemplateService.loadAndProcessTemplate("template-email-gemini.html", variables);
+
+		// Cria o EmailModel
+		EmailModel emailModel = new EmailModel();
+		emailModel.setOwnerRef(portfolioEmailDto.ownerRef());
+		emailModel.setEmailFrom(emailFrom);
+		emailModel.setEmailTo(portfolioEmailDto.emailTo());
+		emailModel.setSubject("Novo contato: " + portfolioEmailDto.subject());
+		emailModel.setText(buildPlainTextContent(portfolioEmailDto));
+		emailModel.setHtml(htmlContent);
+
+		// Envia o email usando o método já existente
+		return sendEmail(emailModel);
+	}
+
+	
+	// ===========================================================================
+ 	// Constrói o conteúdo de texto simples do email de contato
+ 	// ===========================================================================
+	private String buildPlainTextContent(PortfolioEmailDto contactDto) {
+		return String.format("Nome: %s%nEmail: %s%nTelefone: %s%nAssunto: %s%nMensagem: %s",
+			contactDto.name(),
+			contactDto.email(),
+			contactDto.phone(),
+			contactDto.subject(),
+			contactDto.message()
+		);
+	}
+	
+	public Page<EmailModel> findAll(Pageable pageable) {
+		return emailRepository.findAll(pageable);
+	}
+
+	public Optional<EmailModel> findById(UUID id) {
+		return emailRepository.findById(id);
+	}
 }
