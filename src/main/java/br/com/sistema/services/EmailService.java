@@ -126,13 +126,19 @@ public class EmailService {
 	@Transactional
 	public EmailModel sendCoolifyEmail(CoolifyWebhookDto coolifyWebhookDto) throws IOException {
 		
-		//logger.info("Processing contact email from: {} | Subject: {}", portfolioEmailDto.email(), portfolioEmailDto.subject());
+		// Loga o evento recebido do Coolify para monitoramento
+		logger.info("Processing Coolify webhook | Event: {} | Application: {} | Status: {}", 
+			    coolifyWebhookDto.event(), 
+			    coolifyWebhookDto.applicationName(), 
+			    coolifyWebhookDto.success() ? "SUCCESS" : "FAILURE"
+			);
 
 		// Prepara as variáveis do template
 		Map<String, String> variables = new HashMap<>();
-		variables.put("success", coolifyWebhookDto.success().toString());
+		variables.put("icon", coolifyWebhookDto.success() ? "✅" : "❌");
+		variables.put("success", coolifyWebhookDto.success() ? "success" : "error");
 		variables.put("message", coolifyWebhookDto.message());
-		variables.put("event", coolifyWebhookDto.event());
+		variables.put("event_title", coolifyWebhookDto.event().replace("_", " ").toUpperCase());
 		variables.put("application_name", coolifyWebhookDto.applicationName());
 		variables.put("application_uuid", coolifyWebhookDto.applicationUuid());
 		variables.put("deployment_uuid", coolifyWebhookDto.deploymentUuid());
@@ -146,7 +152,7 @@ public class EmailService {
 
 		// Cria o EmailModel
 		EmailModel emailModel = new EmailModel();
-		emailModel.setOwnerRef("Coolyfy Webhook");
+		emailModel.setOwnerRef("Coolify Webhook");
 		emailModel.setEmailFrom("cesar.augusto.rj1@gmail.com");
 		emailModel.setEmailTo("cesar.augusto.rj1@gmail.com");
 		emailModel.setSubject(coolifyWebhookDto.event());
