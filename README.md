@@ -360,7 +360,3 @@ Para usar o Gmail como servidor SMTP:
 ## Licença
 
 Este projeto é de código aberto e está disponível sob a licença especificada no repositório.
-
-## Contato
-
-Para dúvidas ou sugestões, abra uma issue no GitHub.
