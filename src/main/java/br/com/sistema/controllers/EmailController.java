@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import br.com.sistema.dtos.CoolifyWebhookDto;
 import br.com.sistema.dtos.EmailDto;
 import br.com.sistema.dtos.PortfolioEmailDto;
 import br.com.sistema.models.EmailModel;
@@ -86,12 +87,12 @@ public class EmailController {
   	// Método para enviar email de contato usando template do Coolify
   	// ===========================================================================
      @PostMapping("/sending-coolify-email")
-     public ResponseEntity<Object> sendingCoolifyEmail(@RequestBody String rawBody) {
-         try {
-        	 
-    	 	logger.info("Payload bruto recebido:\n{}", rawBody);
-    	    return ResponseEntity.ok().build();
-        	 
+     public ResponseEntity<Object> sendingCoolifyEmail(@RequestBody @Valid CoolifyWebhookDto coolifyWebhookDto) {
+    	 try {
+    		 EmailModel emailModel = emailService.sendCoolifyEmail(coolifyWebhookDto); // Chama o serviço para enviar email do coolify
+             return new ResponseEntity<>(emailModel, HttpStatus.CREATED);
+         } catch (IOException e) {
+             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro ao processar template de email: " + e.getMessage());
          } catch (Exception e) {
              return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro ao enviar email: " + e.getMessage());
          }
