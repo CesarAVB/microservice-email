@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+            padding: 20px;
+            text-align: center;
+            color: white;
+        }
+        .header.success {
+            background-color: #10b981;
+        }
+        .header.error {
+            background-color: #ef4444;
+        }
+        .header.warning {
+            background-color: #f59e0b;
+        }
+        .header.info {
+            background-color: #3b82f6;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 600;
+        }
+        .header .icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+        .content {
+            padding: 30px;
+        }
+        .field {
+            margin-bottom: 20px;
+        }
+        .field-label {
+            font-weight: 600;
+            color: #6b7280;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+        }
+        .field-value {
+            color: #1f2937;
+            font-size: 15px;
+            padding: 10px;
+            background-color: #f9fafb;
+            border-radius: 4px;
+            border-left: 3px solid #e5e7eb;
+        }
+        .field-value.code {
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            background-color: #1f2937;
+            color: #f9fafb;
+            padding: 15px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .divider {
+            height: 1px;
+            background-color: #e5e7eb;
+            margin: 25px 0;
+        }
+        .footer {
+            padding: 20px 30px;
+            background-color: #f9fafb;
+            text-align: center;
+            font-size: 12px;
+            color: #6b7280;
+        }
+        .footer a {
+            color: #3b82f6;
+            text-decoration: none;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #3b82f6;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            margin-top: 15px;
+        }
+        .timestamp {
+            color: #9ca3af;
+            font-size: 13px;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header - Altere a classe (success/error/warning/info) conforme o tipo -->
+        <div class="header ${status}">
+            <div class="icon">${icon}</div>
+            <h1>${title}</h1>
+        </div>
+
+        <!-- Content -->
+        <div class="content">
+            <div class="field">
+                <div class="field-label">Mensagem</div>
+                <div class="field-value">${message}</div>
+            </div>
+
+            <!-- Campos opcionais - remova se não usar -->
+            <div class="field">
+                <div class="field-label">Projeto/Recurso</div>
+                <div class="field-value">${resourceName}</div>
+            </div>
+
+            <div class="field">
+                <div class="field-label">Servidor</div>
+                <div class="field-value">${serverName}</div>
+            </div>
+
+            <div class="field">
+                <div class="field-label">Horário</div>
+                <div class="field-value">
+                    ${timestamp}
+                    <div class="timestamp">${timestampDetail}</div>
+                </div>
+            </div>
+
+            <!-- Para logs/erros - opcional -->
+            <div class="field">
+                <div class="field-label">Detalhes</div>
+                <div class="field-value code">${details}</div>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- Link de ação - opcional -->
+            <div style="text-align: center;">
+                <a href="${actionUrl}" class="button">${actionText}</a>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>Notificação automática do Coolify</p>
+            <p><a href="${coolifyUrl}">Acessar painel do Coolify</a></p>
+        </div>
+    </div>
+</body>
+</html>
