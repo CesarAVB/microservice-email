@@ -18,6 +18,7 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
+import br.com.sistema.dtos.CoolifyWebhookDto;
 import br.com.sistema.dtos.PortfolioEmailDto;
 import br.com.sistema.enums.StatusEmail;
 import br.com.sistema.models.EmailModel;
@@ -123,27 +124,33 @@ public class EmailService {
 	// Envia um email de contato usando template para o portfólio
 	// ===========================================================================
 	@Transactional
-	public EmailModel sendCoolifyEmail(PortfolioEmailDto portfolioEmailDto) throws IOException {
-		logger.info("Processing contact email from: {} | Subject: {}", portfolioEmailDto.email(), portfolioEmailDto.subject());
+	public EmailModel sendCoolifyEmail(CoolifyWebhookDto coolifyWebhookDto) throws IOException {
+		
+		//logger.info("Processing contact email from: {} | Subject: {}", portfolioEmailDto.email(), portfolioEmailDto.subject());
 
 		// Prepara as variáveis do template
 		Map<String, String> variables = new HashMap<>();
-		variables.put("name", portfolioEmailDto.name());
-		variables.put("email", portfolioEmailDto.email());
-		variables.put("phone", portfolioEmailDto.phone());
-		variables.put("subject", portfolioEmailDto.subject());
-		variables.put("message", portfolioEmailDto.message());
+		variables.put("success", coolifyWebhookDto.success().toString());
+		variables.put("message", coolifyWebhookDto.message());
+		variables.put("event", coolifyWebhookDto.event());
+		variables.put("application_name", coolifyWebhookDto.applicationName());
+		variables.put("application_uuid", coolifyWebhookDto.applicationUuid());
+		variables.put("deployment_uuid", coolifyWebhookDto.deploymentUuid());
+		variables.put("deployment_url", coolifyWebhookDto.deploymentUrl());
+		variables.put("project", coolifyWebhookDto.project());
+		variables.put("environment", coolifyWebhookDto.environment());
+		variables.put("fqdn", coolifyWebhookDto.fqdn());
 
 		// Processa o template - escolhe o nome do template e insere as variáveis no HTML
 		String htmlContent = emailTemplateService.loadAndProcessTemplate("template-email-coolify.html", variables);
 
 		// Cria o EmailModel
 		EmailModel emailModel = new EmailModel();
-		emailModel.setOwnerRef(portfolioEmailDto.ownerRef());
-		emailModel.setEmailFrom(emailFrom);
-		emailModel.setEmailTo(portfolioEmailDto.emailTo());
-		emailModel.setSubject("Novo contato: " + portfolioEmailDto.subject());
-		emailModel.setText(buildPlainTextContent(portfolioEmailDto));
+		emailModel.setOwnerRef("Coolyfy Webhook");
+		emailModel.setEmailFrom("cesar.augusto.rj1@gmail.com");
+		emailModel.setEmailTo("cesar.augusto.rj1@gmail.com");
+		emailModel.setSubject(coolifyWebhookDto.event());
+		emailModel.setText(buildPlainTextContent(coolifyWebhookDto));
 		emailModel.setHtml(htmlContent);
 
 		// Envia o email usando o método já existente
@@ -158,6 +165,34 @@ public class EmailService {
 	private String buildPlainTextContent(PortfolioEmailDto contactDto) {
 		return String.format("Nome: %s%nEmail: %s%nTelefone: %s%nAssunto: %s%nMensagem: %s", contactDto.name(),
 				contactDto.email(), contactDto.phone(), contactDto.subject(), contactDto.message());
+	}
+	
+	// ===========================================================================
+	// Constrói o conteúdo de texto simples do email de contato
+	// ===========================================================================
+	private String buildPlainTextContent(CoolifyWebhookDto coolifyWebhookDto) {
+	    return String.format(
+	        "Status: %s%n" +
+	        "Evento: %s%n" +
+	        "Mensagem: %s%n" +
+	        "Aplicação: %s%n" +
+	        "Projeto: %s%n" +
+	        "Ambiente: %s%n" +
+	        "URL da Aplicação: %s%n" +
+	        "URL do Deployment: %s%n" +
+	        "Application UUID: %s%n" +
+	        "Deployment UUID: %s",
+	        coolifyWebhookDto.success() ? "Sucesso" : "Falha",
+	        coolifyWebhookDto.event(),
+	        coolifyWebhookDto.message(),
+	        coolifyWebhookDto.applicationName(),
+	        coolifyWebhookDto.project(),
+	        coolifyWebhookDto.environment(),
+	        coolifyWebhookDto.fqdn(),
+	        coolifyWebhookDto.deploymentUrl(),
+	        coolifyWebhookDto.applicationUuid(),
+	        coolifyWebhookDto.deploymentUuid()
+	    );
 	}
 
 	public Page<EmailModel> findAll(Pageable pageable) {

@@ -27,10 +27,7 @@ public class EmailTemplateService {
             throw new IOException("Template não encontrado: " + templateName);
         }
         
-        String template = StreamUtils.copyToString(
-            resource.getInputStream(), 
-            StandardCharsets.UTF_8
-        );
+        String template = StreamUtils.copyToString(resource.getInputStream(), StandardCharsets.UTF_8);
         
         logger.info("Template carregado com sucesso: {}", templateName);
         return template;
