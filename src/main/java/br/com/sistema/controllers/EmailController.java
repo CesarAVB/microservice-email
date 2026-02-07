@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -12,18 +14,22 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-import br.com.sistema.dtos.PortfolioEmailDto;
 import br.com.sistema.dtos.EmailDto;
+import br.com.sistema.dtos.PortfolioEmailDto;
 import br.com.sistema.models.EmailModel;
 import br.com.sistema.services.EmailService;
-import jakarta.validation.Valid;
-
-import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api")
@@ -32,6 +38,8 @@ public class EmailController {
 
     @Autowired
     EmailService emailService;
+    
+    Logger logger = LogManager.getLogger(EmailController.class);
 
     
     // ===========================================================================
@@ -53,7 +61,7 @@ public class EmailController {
 
     
     // ===========================================================================
- 	// Método para enviar email de contato usando template
+ 	// Método para enviar email de contato usando template do Portfólio
  	// ===========================================================================
     @PostMapping("/sending-portfolio-email")
     @Operation(summary = "Enviar email de contato", description = "Envia um email usando o template de contato do portfólio")
@@ -72,6 +80,22 @@ public class EmailController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro ao enviar email: " + e.getMessage());
         }
     }
+    
+    
+    // ===========================================================================
+  	// Método para enviar email de contato usando template do Coolify
+  	// ===========================================================================
+     @PostMapping("/sending-coolify-email")
+     public ResponseEntity<Object> sendingCoolifyEmail(@RequestBody String rawBody) {
+         try {
+        	 
+    	 	logger.info("Payload bruto recebido:\n{}", rawBody);
+    	    return ResponseEntity.ok().build();
+        	 
+         } catch (Exception e) {
+             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro ao enviar email: " + e.getMessage());
+         }
+     }
 
     
     // ===========================================================================
